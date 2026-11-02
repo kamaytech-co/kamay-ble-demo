@@ -1,0 +1,73 @@
+name: build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ENVS: esp32dev esp32-c3-devkitm-1 esp32-s3-devkitc-1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-${{ runner.os }}-
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build all environments
+        # `pio run` a secas solo compila default_envs; aquí van los tres.
+        run: pio run $(for e in $ENVS; do printf ' -e %s' "$e"; done)
+
+      - name: Collect binaries
+        run: |
+          set -eu
+          for e in $ENVS; do
+            mkdir -p "dist/$e"
+            cp ".pio/build/$e/bootloader.bin" ".pio/build/$e/partitions.bin" ".pio/build/$e/firmware.bin" "dist/$e/"
+            cp ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin "dist/$e/"
+            cp flash.sh "dist/$e/"
+          done
+          ls -lR dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kamay-ble-demo-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+
+      - name: Package release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -eu
+          for e in $ENVS; do
+            (cd dist && zip -r "../kamay-ble-demo-${GITHUB_REF_NAME}-$e.zip" "$e")
+          done
+          ls -l kamay-ble-demo-*.zip
+
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: |
+            kamay-ble-demo-*.zip
+            flash.sh
+          generate_release_notes: true
