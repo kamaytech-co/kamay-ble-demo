@@ -4,7 +4,8 @@
 # Uso:
 #   ./flash.sh [env] [puerto] [baudios]
 #
-#   env      esp32dev (por defecto) | esp32-c3-devkitm-1 | esp32-s3-devkitc-1
+#   env      esp32dev (por defecto) | esp32-c3-devkitm-1 | esp32-s3-devkitc-1 |
+#            esp32-c6-devkitc-1
 #   puerto   /dev/ttyUSB0, /dev/ttyACM0, COM5 ...  (vacio = esptool lo detecta)
 #   baudios  460800 por defecto; prueba 115200 si el puerto es inestable
 #
@@ -21,15 +22,16 @@ ENV_NAME="${1:-esp32dev}"
 PORT="${2:-}"
 BAUD="${3:-460800}"
 
-# Mismos parametros que usa PlatformIO al subir (platform espressif32 7.x):
-# bootloader en 0x1000 en ESP32 clasico y en 0x0 en C3 / S3; flash_mode dio en
+# Mismos parametros que usa PlatformIO al subir (espressif32 7.x y pioarduino para el C6):
+# bootloader en 0x1000 en ESP32 clasico y en 0x0 en C3 / S3 / C6; flash_mode dio en
 # la linea de comandos aunque la placa sea QIO (el header del bootloader manda).
 case "$ENV_NAME" in
   esp32dev)           CHIP=esp32;   BOOT_OFFSET=0x1000; FLASH_FREQ=40m ;;
   esp32-c3-devkitm-1) CHIP=esp32c3; BOOT_OFFSET=0x0;    FLASH_FREQ=80m ;;
   esp32-s3-devkitc-1) CHIP=esp32s3; BOOT_OFFSET=0x0;    FLASH_FREQ=80m ;;
+  esp32-c6-devkitc-1) CHIP=esp32c6; BOOT_OFFSET=0x0;    FLASH_FREQ=80m ;;
   *)
-    echo "env desconocido: $ENV_NAME (usa esp32dev, esp32-c3-devkitm-1 o esp32-s3-devkitc-1)" >&2
+    echo "env desconocido: $ENV_NAME (usa esp32dev, esp32-c3-devkitm-1, esp32-s3-devkitc-1 o esp32-c6-devkitc-1)" >&2
     exit 1 ;;
 esac
 

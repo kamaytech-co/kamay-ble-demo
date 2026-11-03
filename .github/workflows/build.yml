@@ -11,7 +11,10 @@ permissions:
   contents: write
 
 env:
-  ENVS: esp32dev esp32-c3-devkitm-1 esp32-s3-devkitc-1
+  ENVS: esp32dev esp32-c3-devkitm-1 esp32-s3-devkitc-1 esp32-c6-devkitc-1
+  # El C6 usa pioarduino, que instala su framework con el mismo nombre de paquete que el
+  # oficial. Se compila con su propia carpeta de PlatformIO para que no se pisen.
+  ENVS_PIOARDUINO: esp32-c6-devkitc-1
 
 jobs:
   build:
@@ -26,7 +29,9 @@ jobs:
       - name: Cache PlatformIO
         uses: actions/cache@v4
         with:
-          path: ~/.platformio
+          path: |
+            ~/.platformio
+            ~/.platformio-pioarduino
           key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
           restore-keys: |
             pio-${{ runner.os }}-
@@ -35,8 +40,15 @@ jobs:
         run: pip install platformio
 
       - name: Build all environments
-        # `pio run` a secas solo compila default_envs; aquí van los tres.
-        run: pio run $(for e in $ENVS; do printf ' -e %s' "$e"; done)
+        # `pio run` a secas solo compila default_envs; aquí van todos.
+        run: |
+          set -eu
+          official=""
+          for e in $ENVS; do
+            case " $ENVS_PIOARDUINO " in *" $e "*) ;; *) official="$official -e $e" ;; esac
+          done
+          pio run $official
+          PLATFORMIO_CORE_DIR="$HOME/.platformio-pioarduino" pio run $(for e in $ENVS_PIOARDUINO; do printf ' -e %s' "$e"; done)
 
       - name: Collect binaries
         run: |
@@ -44,7 +56,9 @@ jobs:
           for e in $ENVS; do
             mkdir -p "dist/$e"
             cp ".pio/build/$e/bootloader.bin" ".pio/build/$e/partitions.bin" ".pio/build/$e/firmware.bin" "dist/$e/"
-            cp ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin "dist/$e/"
+            core="$HOME/.platformio"
+            case " $ENVS_PIOARDUINO " in *" $e "*) core="$HOME/.platformio-pioarduino" ;; esac
+            cp "$core/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin" "dist/$e/"
             cp flash.sh "dist/$e/"
           done
           ls -lR dist
