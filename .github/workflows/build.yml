@@ -48,16 +48,21 @@ jobs:
             case " $ENVS_PIOARDUINO " in *" $e "*) ;; *) official="$official -e $e" ;; esac
           done
           pio run $official
-          PLATFORMIO_CORE_DIR="$HOME/.platformio-pioarduino" pio run $(for e in $ENVS_PIOARDUINO; do printf ' -e %s' "$e"; done)
+          # El C6 corre con su propia carpeta de PlatformIO y su propio espacio de
+          # trabajo (.pio-c6): si compartiera .pio/build con la corrida oficial, PlatformIO
+          # lo limpiaría al no coincidir el checksum (incluye la versión del Core) y borraría
+          # los .bin de las otras placas.
+          PLATFORMIO_CORE_DIR="$HOME/.platformio-pioarduino" PLATFORMIO_WORKSPACE_DIR=.pio-c6 \
+            pio run $(for e in $ENVS_PIOARDUINO; do printf ' -e %s' "$e"; done)
 
       - name: Collect binaries
         run: |
           set -eu
           for e in $ENVS; do
             mkdir -p "dist/$e"
-            cp ".pio/build/$e/bootloader.bin" ".pio/build/$e/partitions.bin" ".pio/build/$e/firmware.bin" "dist/$e/"
-            core="$HOME/.platformio"
-            case " $ENVS_PIOARDUINO " in *" $e "*) core="$HOME/.platformio-pioarduino" ;; esac
+            build=".pio/build/$e"; core="$HOME/.platformio"
+            case " $ENVS_PIOARDUINO " in *" $e "*) build=".pio-c6/build/$e"; core="$HOME/.platformio-pioarduino" ;; esac
+            cp "$build/bootloader.bin" "$build/partitions.bin" "$build/firmware.bin" "dist/$e/"
             cp "$core/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin" "dist/$e/"
             cp flash.sh "dist/$e/"
           done

@@ -76,7 +76,7 @@ Cada release en GitHub trae un zip por placa con `bootloader.bin`,
 
 ```bash
 pip install esptool
-unzip kamay-ble-demo-v0.2.0-esp32dev.zip
+unzip kamay-ble-demo-v0.2.1-esp32dev.zip
 cd esp32dev
 ./flash.sh esp32dev /dev/ttyUSB0
 ```
@@ -93,7 +93,7 @@ Al arrancar, el monitor serie muestra el nombre, la MAC, los bytes del
 advertising y luego una linea por segundo con los valores publicados:
 
 ```
-[boot] Kamay BLE Demo v0.2.0 placa=esp32dev
+[boot] Kamay BLE Demo v0.2.1 placa=esp32dev
 [boot] sensor=SYNTH bateria=FIXED
 [ble] nombre=Kamay-Demo-3C mac=A0:B7:65:12:34:3C
 [ble] adv (28 bytes): 02 01 06 05 03 1A 18 0F 18 03 19 40 05 0E 09 4B 61 6D 61 79 2D 44 65 6D 6F 2D 33 43
@@ -143,7 +143,7 @@ por apt funcionan.
 | Battery Service 0x180F | Battery Level | 0x2A19 | READ, NOTIFY | `uint8`, 0 a 100 % |
 | Device Information 0x180A | Manufacturer Name String | 0x2A29 | READ | `KamayTech` |
 | | Model Number String | 0x2A24 | READ | `BLE-DEMO` |
-| | Firmware Revision String | 0x2A26 | READ | `KAMAY_FW_VERSION`, por ejemplo `0.2.0` |
+| | Firmware Revision String | 0x2A26 | READ | `KAMAY_FW_VERSION`, por ejemplo `0.2.1` |
 | | Hardware Revision String | 0x2A27 | READ | nombre del env, por ejemplo `esp32dev` |
 
 Ademas de estos, NimBLE publica los servicios obligatorios GAP (0x1800) y
@@ -279,7 +279,7 @@ Todas van en `build_flags` de `platformio.ini`.
 
 | Flag | Por defecto | Efecto |
 |---|---|---|
-| `KAMAY_FW_VERSION` | `"0.2.0"` | Firmware Revision (0x2A26) y linea de arranque |
+| `KAMAY_FW_VERSION` | `"0.2.1"` | Firmware Revision (0x2A26) y linea de arranque |
 | `KAMAY_BOARD` | `"$PIOENV"` | Hardware Revision (0x2A27); PlatformIO pone el nombre del env |
 | `KAMAY_SENSOR` | `AUTO` | backend de sensor (ver arriba) |
 | `KAMAY_BAT_FIXED` | `100` | nivel de batería en modo FIXED |
@@ -309,7 +309,7 @@ Cada push y cada pull request compilan los cuatro envs y dejan los `.bin` como
 artefacto del workflow. Para publicar un release con binarios:
 
 ```bash
-git tag v0.2.0
+git tag v0.2.1
 git push --tags
 ```
 
